@@ -104,114 +104,145 @@ const showBackgroundMovieInfo = (movie) => {
           </div>
   `;
 };
+const bindMovieEvents = ({ onMore, onSearch, onClick }) => {
+  const moreBtn = getElement(".display-more-btn");
+  moreBtn.addEventListener("click", () => {
+    onMore();
+  });
+  const searchBar = getInputElement(".search-bar");
+  searchBar.addEventListener("keydown", (event) => {
+    if (event.isComposing) return;
+    if (event.key === "Enter") onSearch(searchBar.value);
+  });
+  const searchBtn = getElement(".search-btn");
+  searchBtn.addEventListener("click", () => {
+    onSearch(searchBar.value);
+  });
+  const thumbnailList = getElement(".thumbnail-list");
+  thumbnailList.addEventListener("click", (event) => {
+    const target = event.target;
+    const item = target.closest(".item");
+    const title = item?.querySelector(".title")?.textContent;
+    if (!title) return;
+    onClick(title);
+  });
+};
+const hideSearchErrorText = () => {
+  const searchError = getElement(".search-error-text");
+  searchError.textContent = "";
+  searchError.hidden = true;
+};
+const showErrorText = (string) => {
+  const searchError = getElement(".search-error-text");
+  searchError.textContent = string;
+  searchError.hidden = false;
+};
+const updateTitleText = (state2) => {
+  const description = getElement(".page-title");
+  const background = getElement(".background-container");
+  if (state2.searchBarText === "") {
+    background.hidden = false;
+    description.textContent = "지금 인기 있는 영화";
+  } else {
+    background.hidden = true;
+    description.textContent = `'${state2.searchBarText}' 검색 결과`;
+  }
+};
+const controlSearchResultText = (state2) => {
+  const searchError = getElement(".search-error-text");
+  if (state2.searchBarText !== "" && state2.movieList.length === 0) {
+    searchError.hidden = false;
+    searchError.textContent = "검색 결과가 없습니다.";
+    return;
+  }
+  searchError.hidden = true;
+};
 const fetchDefaultMovieList = async (pageNum) => {
-  const URL = `https://api.themoviedb.org/3/movie/popular?api_key=${"f7c82d8d69637b69b5e8841185b42153"}&language=ko-KR&page=${pageNum}`;
-  const response = await fetch(URL);
-  const data = await response.json();
+  const data = await request("/movie/popular", { page: pageNum });
   return data.results;
 };
 const fetchSearchMovieList = async (pageNum, searchBarText) => {
-  const URL = `https://api.themoviedb.org/3/search/movie?api_key=${"f7c82d8d69637b69b5e8841185b42153"}&query=${encodeURIComponent(searchBarText)}&language=ko-KR&page=${pageNum}`;
-  const response = await fetch(URL);
-  const data = await response.json();
+  const data = await request("/search/movie", {
+    page: pageNum,
+    query: searchBarText
+  });
   return data.results;
 };
-const displayMovieBySearch = async (movieDisplay, state) => {
-  const searchBar = getInputElement(".search-bar");
-  state.searchBarText = searchBar.value;
-  const background = getElement(".background-container");
-  background.hidden = true;
-  const description = getElement(".page-title");
-  let movieList;
-  if (state.searchBarText === "") {
-    background.hidden = false;
-    state.pageNum = 1;
-    movieDisplay.replaceChildren();
-    addMovieSkeletonUIList(movieDisplay);
-    movieList = await fetchDefaultMovieList(state.pageNum);
+const BASE_URL = "https://api.themoviedb.org/3";
+const API_KEY = "f7c82d8d69637b69b5e8841185b42153";
+const LANGUAGE = "ko-KR";
+const request = async (path, params) => {
+  const url = new URL(`${BASE_URL}${path}`);
+  url.searchParams.append("api_key", API_KEY);
+  url.searchParams.append("language", LANGUAGE);
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.append(key, String(value));
+  });
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("영화 정보를 불러오지 못했습니다.");
+  return response.json();
+};
+const loadMovies = async ({
+  state: state2,
+  reset = false
+}) => {
+  const movieDisplay = getUListElement(".thumbnail-list");
+  if (reset) movieDisplay.replaceChildren();
+  addMovieSkeletonUIList(movieDisplay);
+  try {
+    const fetchedMovies = state2.searchBarText === "" ? await fetchDefaultMovieList(state2.pageNum) : await fetchSearchMovieList(state2.pageNum, state2.searchBarText);
+    state2.movieList = reset ? fetchedMovies : [...state2.movieList, ...fetchedMovies];
+    addMovieList(movieDisplay, fetchedMovies);
+  } catch (error) {
+    showErrorText("영화 목록을 불러오지 못했습니다.");
+    throw error;
+  } finally {
     removeMovieSkeletonUIList(movieDisplay);
-    description.textContent = "지금 인기 있는 영화";
-  } else {
-    movieDisplay.replaceChildren();
-    addMovieSkeletonUIList(movieDisplay);
-    movieList = await fetchSearchMovieList(state.pageNum, state.searchBarText);
-    removeMovieSkeletonUIList(movieDisplay);
-    description.textContent = `'${state.searchBarText}' 검색 결과`;
-    const searchError = getElement(".search-error-container");
-    if (movieList.length === 0) {
-      searchError.hidden = false;
-    } else {
-      searchError.hidden = true;
-    }
   }
-  addMovieList(movieDisplay, movieList);
 };
-const bindSearchEvents = (state) => {
-  const movieDisplay = getUListElement(".thumbnail-list");
-  const searchBar = getInputElement(".search-bar");
-  searchBar.addEventListener("keydown", async (event) => {
-    if (event.isComposing) return;
-    if (event.key === "Enter") {
-      displayMovieBySearch(movieDisplay, state);
+const createMovieController = (state2) => ({
+  loadMoreMovies: async () => {
+    try {
+      state2.pageNum++;
+      await loadMovies({ state: state2 });
+    } catch (error) {
+      state2.pageNum -= 1;
     }
-  });
-  const searchBtn = document.querySelector(".search-btn");
-  searchBtn?.addEventListener("click", async () => {
-    displayMovieBySearch(movieDisplay, state);
-  });
-};
-const bindMoreMovieEvents = (state) => {
-  const movieDisplay = getUListElement(".thumbnail-list");
-  const displayMoreBtn = document.querySelector(".display-more-btn");
-  displayMoreBtn?.addEventListener("click", async () => {
-    state.pageNum++;
-    addMovieSkeletonUIList(movieDisplay);
-    let movieList;
-    if (state.searchBarText === "") {
-      movieList = await fetchDefaultMovieList(state.pageNum);
-    } else {
-      movieList = await fetchSearchMovieList(
-        state.pageNum,
-        state.searchBarText
-      );
+  },
+  searchMovies: async (searchBarText) => {
+    state2.pageNum = 1;
+    state2.searchBarText = searchBarText;
+    try {
+      hideSearchErrorText();
+      updateTitleText(state2);
+      await loadMovies({ state: state2, reset: true });
+      controlSearchResultText(state2);
+    } catch (error) {
+      state2.searchBarText = "";
     }
-    removeMovieSkeletonUIList(movieDisplay);
-    addMovieList(movieDisplay, movieList);
-  });
-};
-const bindClickPosterEvent = (state) => {
-  const thumbnailBox = getElement(".thumbnail-list");
-  thumbnailBox.addEventListener("click", async (event) => {
-    const target = event.target;
-    const item = target.closest(".item");
-    const titleElement = item.querySelector("strong");
-    let movieList;
-    if (state.searchBarText === "") {
-      movieList = await fetchDefaultMovieList(state.pageNum);
-    } else {
-      movieList = await fetchSearchMovieList(
-        state.pageNum,
-        state.searchBarText
-      );
-    }
-    const backgroundMovie = movieList.filter(
-      (movie) => movie.title === titleElement?.textContent
-    )[0];
-    showBackgroundMovieInfo(backgroundMovie);
-  });
+  },
+  clickMovie: async (title) => {
+    const selectedMovie = state2.movieList.find((movie) => movie.title == title);
+    if (!selectedMovie) return;
+    showBackgroundMovieInfo(selectedMovie);
+  }
+});
+const state = {
+  pageNum: 1,
+  searchBarText: "",
+  movieList: []
 };
 addEventListener("load", async () => {
-  const state = {
-    pageNum: 1,
-    searchBarText: ""
-  };
-  const movieDisplay = getUListElement(".thumbnail-list");
-  addMovieSkeletonUIList(movieDisplay, 20);
-  const movieList = await fetchDefaultMovieList(state.pageNum);
-  removeMovieSkeletonUIList(movieDisplay);
-  addMovieList(movieDisplay, movieList);
-  showBackgroundMovieInfo(movieList[0]);
-  bindSearchEvents(state);
-  bindMoreMovieEvents(state);
-  bindClickPosterEvent(state);
+  const movieController = createMovieController(state);
+  try {
+    await loadMovies({ state, reset: false });
+    showBackgroundMovieInfo(state.movieList[0]);
+    bindMovieEvents({
+      onMore: movieController.loadMoreMovies,
+      onSearch: movieController.searchMovies,
+      onClick: movieController.clickMovie
+    });
+  } catch (error) {
+    console.log(error);
+  }
 });
