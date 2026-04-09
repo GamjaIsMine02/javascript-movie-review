@@ -21,13 +21,17 @@ a {
 body {
   font-size: 16px;
   color: var(--color-white);
-  background-color: var(--color-bluegray-80);
+  background-color: var(--color-bluegray-100);
 }
 #wrap,
 section {
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+.movie-section {
+  width: fit-content;
+  margin: 0 auto;
 }
 main {
   margin: 64px 0;
@@ -38,6 +42,7 @@ main section {
 .page-title {
   font-size: 3rem;
   margin-bottom: 4rem;
+  margin-left: 2rem;
   font-weight: 600;
 }
 .star {
@@ -74,11 +79,24 @@ button.primary {
   height: 500px;
   padding: 48px;
 }
+.background-container.is-search-mode {
+  height: auto;
+  padding: 24px 48px;
+}
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  gap: 1.5rem;
+}
+.logo-container > img {
+  width: 10rem;
+  z-index: 3;
+}
 .search-container {
-  position: absolute;
-  top: 3.4%;
-  left: 35%;
-  width: 500px;
+  width: 55%;
 
   border: 2px solid white;
   border-radius: 20px;
@@ -125,11 +143,14 @@ button.primary {
   object-fit: cover;
   opacity: 50%;
 }
+.overlay[hidden] {
+  display: none;
+}
 .top-rated-container {
   user-select: none;
   position: relative;
   z-index: 2;
-  max-width: 1280px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 .top-rated-movie {
@@ -247,6 +268,31 @@ strong[class="title"] {
   font-size: 1.2rem;
   font-weight: 500;
 }
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+.error-icon {
+  width: 10rem;
+  height: 10rem;
+}
+.error-text {
+  font-size: 3rem;
+  font-weight: 500;
+}
+.error-container {
+  margin-bottom: 5rem;
+}
+.error-container[hidden] {
+  display: none;
+}
+.stop-scrolling {
+  height: 100%;
+  overflow: hidden;
+}
 /* modal.css */
 body.modal-open {
   overflow: hidden;
@@ -257,6 +303,7 @@ body.modal-open {
   left: 0;
   width: 100%;
   height: 100%;
+  padding: 0 20px;
   background-color: rgba(0, 0, 0, 0.5); /* 반투명 배경을 위해 설정 */
   backdrop-filter: blur(10px); /* 블러 효과 적용 */
   display: flex;
@@ -311,16 +358,41 @@ body.modal-open {
   position: relative;
   top: 5px;
 }
+.modal-description .rate > span {
+  color: white;
+}
 .modal-description > *:not(:last-child) {
   margin-bottom: 8px;
 }
 .modal-description h2 {
+  width: 80%;
+  word-break: keep-all;
+
   font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.1;
   margin: 0 0 8px;
+}
+.modal-description hr {
+  opacity: 0.4;
+}
+.rate-title,
+.detail-title {
+  font-size: 1.3rem;
+  font-weight: 600;
 }
 .detail {
   max-height: 430px;
   overflow-y: auto;
+}
+.user-rate {
+  display: flex;
+
+  gap: 1rem;
+}
+.rate-detail > span {
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 /* http://meyerweb.com/eric/tools/css/reset/
    v2.0 | 20110126
@@ -479,8 +551,10 @@ table {
 .thumbnail-list {
   margin: 0 auto 56px;
   display: grid;
-  grid-template-columns: repeat(5, 200px);
+  grid-template-columns: repeat(auto-fit, 200px);
   gap: 70px;
+
+  justify-content: center;
 }
 .thumbnail {
   width: 200px;
@@ -507,4 +581,114 @@ p.rate > span {
 .item .star {
   width: 16px;
   top: 1px;
+}
+@media (max-width: 800px) {
+  .top-rated-movie > .title {
+    font-size: 2.5rem;
+  }
+  .search-container {
+    width: 80%;
+  }
+
+  /* 1. 그리드 변경 */
+  .thumbnail-list {
+    margin: 0 auto 56px;
+    /* grid-template-columns: repeat(3, 200px); */
+    gap: 60px;
+  }
+
+  /* 2. 모달 변경 */
+  .modal-background {
+    align-items: flex-end;
+    padding: 0 0;
+  }
+
+  .modal-container {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1.6rem;
+  }
+
+  .modal-image img {
+    width: 16rem;
+    border-radius: 16px;
+  }
+
+  .movie-detail {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: 0.5rem;
+  }
+}
+@media (max-width: 400px) {
+  .top-rated-movie > .title {
+    font-size: 2rem;
+  }
+  .search-container {
+    width: 100%;
+  }
+
+  /* 1. 그리드 변경 */
+  .thumbnail-list {
+    /* grid-template-columns: repeat(1, 250px); */
+    gap: 50px;
+  }
+
+  .thumbnail {
+    width: 200px;
+    border-radius: 8px;
+  }
+
+  .page-title {
+    font-size: 2.4rem;
+    margin: 0 auto 56px;
+  }
+
+  section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* 2. 모달 변경 */
+  .modal-background {
+    align-items: flex-end;
+    padding: 0 0;
+  }
+
+  .modal-container {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1.6rem;
+  }
+
+  .modal-image img {
+    display: none;
+  }
+
+  .movie-detail {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: 0.5rem;
+  }
+
+  .user-rate,
+  .modal-description {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-description hr {
+    width: 100%;
+  }
 }
