@@ -623,6 +623,9 @@ p.rate > span {
 
     gap: 0.5rem;
   }
+  .modal-description h2 {
+    text-align: center;
+  }
 }
 @media (max-width: 400px) {
   .top-rated-movie > .title {
@@ -689,6 +692,10 @@ p.rate > span {
   }
 
   .modal-description hr {
+    width: 100%;
+  }
+  .modal-description h2 {
+    text-align: center;
     width: 100%;
   }
 }
